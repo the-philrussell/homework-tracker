@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HW Tracker">
+<title>Homework Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a1a;
+    --surface: #12122a;
+    --surface2: #1a1a35;
+    --border: #2a2a5a;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --pixel: 'Press Start 2P', monospace;
+    --body: 'Nunito', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 0 80px;
+  }
+
+  .header {
+    text-align: center;
+    padding: 32px 24px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .header-title {
+    font-family: var(--pixel);
+    font-size: 13px;
+    color: var(--accent2);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(6,182,212,0.5);
+  }
+  .header-sub { font-size: 13px; color: var(--muted); }
+
+  .progress-wrap {
+    padding: 16px 24px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .screen { display: none; padding: 24px; }
+  .screen.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .screen-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .screen-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  /* KID SELECTOR */
+  .kid-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .kid-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .kid-btn:active { transform: scale(0.97); }
+  .kid-btn.selected {
+    border-color: var(--accent);
+    background: rgba(124,58,237,0.15);
+    box-shadow: 0 0 24px rgba(124,58,237,0.25);
+  }
+  .kid-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin-bottom: 4px;
+  }
+  .kid-btn:nth-child(1) .kid-avatar { background: rgba(124,58,237,0.2); }
+  .kid-btn:nth-child(2) .kid-avatar { background: rgba(6,182,212,0.2); }
+  .kid-name { font-family: var(--pixel); font-size: 11px; color: var(--text); }
+  .kid-detail { font-size: 12px; color: var(--muted); }
+
+  /* YES/NO */
+  .yn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .yn-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-family: var(--body);
+  }
+  .yn-btn:active { transform: scale(0.97); }
+  .yn-btn .yn-icon { font-size: 36px; margin-bottom: 8px; }
+  .yn-btn .yn-label { font-size: 16px; font-weight: 800; display: block; margin-bottom: 4px; }
+  .yn-btn .yn-sub { font-size: 12px; color: var(--muted); }
+  .yn-btn.yes.selected {
+    border-color: var(--green);
+    background: rgba(16,185,129,0.12);
+    box-shadow: 0 0 24px rgba(16,185,129,0.2);
+  }
+  .yn-btn.no.selected {
+    border-color: var(--accent3);
+    background: rgba(245,158,11,0.12);
+    box-shadow: 0 0 24px rgba(245,158,11,0.2);
+  }
+
+  /* SUBJECT CARDS */
+  .subject-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, opacity 0.2s;
+  }
+  .subject-card.has-hw { border-color: var(--accent); }
+  .subject-card.no-hw { border-color: var(--green); opacity: 0.65; }
+  .subject-card.invalid { border-color: var(--red) !important; box-shadow: 0 0 16px rgba(239,68,68,0.25); }
+
+  .subject-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .subject-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .subject-name { font-size: 17px; font-weight: 800; color: var(--text); }
+
+  .status-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .status-btn {
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .status-btn.hw-btn.active {
+    border-color: var(--accent);
+    background: rgba(124,58,237,0.2);
+    color: #c4b5fd;
+  }
+  .status-btn.nohw-btn.active {
+    border-color: var(--green);
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+  }
+
+  .hw-textarea-wrap {
+    margin-top: 12px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 0;
+    opacity: 0;
+  }
+  .hw-textarea-wrap.visible { max-height: 200px; opacity: 1; }
+
+  .hw-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .hw-textarea:focus { border-color: var(--accent); }
+  .hw-textarea::placeholder { color: var(--muted); }
+  .hw-textarea.invalid { border-color: var(--red); }
+
+  /* QUIZ CARDS */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .quiz-card.has-quiz { border-color: var(--accent3); }
+  .quiz-card.invalid { border-color: var(--red) !important; box-shadow: 0 0 16px rgba(239,68,68,0.25); }
+
+  .quiz-row { display: flex; align-items: center; gap: 14px; }
+  .quiz-checkbox {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.15s;
+    color: transparent;
+    user-select: none;
+  }
+  .quiz-checkbox.checked {
+    border-color: var(--accent3);
+    background: rgba(245,158,11,0.2);
+    color: var(--accent3);
+  }
+  .quiz-label {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .quiz-icon { font-size: 20px; }
+
+  .quiz-date-wrap {
+    margin-top: 14px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 0;
+    opacity: 0;
+  }
+  .quiz-date-wrap.visible { max-height: 80px; opacity: 1; }
+
+  .quiz-date-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .quiz-date-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 600;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+    color-scheme: dark;
+  }
+  .quiz-date-input:focus { border-color: var(--accent3); }
+  .quiz-date-input.invalid { border-color: var(--red); }
+
+  /* BUTTONS */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--pixel);
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.4);
+  }
+  .btn-primary:hover { background: #6d28d9; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    margin-top: 12px;
+    font-size: 10px;
+  }
+  .btn-submit {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 4px 24px rgba(16,185,129,0.4);
+    cursor: pointer;
+  }
+  .btn-submit:hover { background: #059669; }
+
+  /* ERROR BANNER — prominent, hard to miss */
+  .error-banner {
+    display: none;
+    background: rgba(239,68,68,0.15);
+    border: 2px solid var(--red);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fca5a5;
+    text-align: center;
+    animation: shake 0.4s ease;
+  }
+  .error-banner.visible { display: block; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+
+  /* SUCCESS */
+  .success-wrap { text-align: center; padding: 40px 24px; }
+  .success-trophy { font-size: 72px; margin-bottom: 16px; animation: bounce 0.6s ease; }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-12px); }
+  }
+  .success-title {
+    font-family: var(--pixel);
+    font-size: 14px;
+    color: var(--accent3);
+    margin-bottom: 12px;
+    text-shadow: 0 0 20px rgba(245,158,11,0.5);
+  }
+  .success-msg { font-size: 16px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+  .xp-badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid var(--accent3);
+    border-radius: 40px;
+    padding: 10px 24px;
+    font-family: var(--pixel);
+    font-size: 10px;
+    color: var(--accent3);
+    margin-bottom: 32px;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 16px;
+    font-family: var(--pixel);
+    font-size: 10px;
+    color: var(--muted);
+    display: none;
+  }
+  .loading.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-title">// HOMEWORK TRACKER //</div>
+    <div class="header-sub" id="todayDate"></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 4</div>
+  </div>
+
+  <!-- SCREEN 1: WHO ARE YOU -->
+  <div class="screen active" id="screen1">
+    <div class="section-label">// PLAYER SELECT //</div>
+    <div class="screen-title">Who's logging in?</div>
+    <div class="screen-sub">Select your character to load your subjects.</div>
+    <div class="kid-grid">
+      <div class="kid-btn" onclick="selectKid('Finley')" id="btn-Finley">
+        <div class="kid-avatar">🦅</div>
+        <div class="kid-name">FINLEY</div>
+        <div class="kid-detail">Latin • 6th Grade</div>
+      </div>
+      <div class="kid-btn" onclick="selectKid('Luca')" id="btn-Luca">
+        <div class="kid-avatar">⚡</div>
+        <div class="kid-name">LUCA</div>
+        <div class="kid-detail">Spanish • 4th Grade</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="validateAndGo1()">CONTINUE →</button>
+    <div class="error-banner" id="err1">⚠️ Pick your character first!</div>
+  </div>
+
+  <!-- SCREEN 2: HOMEWORK TODAY? -->
+  <div class="screen" id="screen2">
+    <div class="section-label">// DAILY CHECK-IN //</div>
+    <div class="screen-title">Any homework today?</div>
+    <div class="screen-sub">Be honest. Your XP depends on it. 👀</div>
+    <div class="yn-grid">
+      <div class="yn-btn yes" onclick="selectHW(true)" id="btn-yes">
+        <div class="yn-icon">📚</div>
+        <span class="yn-label">Yes</span>
+        <span class="yn-sub">I've got homework</span>
+      </div>
+      <div class="yn-btn no" onclick="selectHW(false)" id="btn-no">
+        <div class="yn-icon">🎉</div>
+        <span class="yn-label">No</span>
+        <span class="yn-sub">Nothing today!</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="validateAndGo2()">CONTINUE →</button>
+    <button class="btn btn-secondary" onclick="showScreen(1)">← BACK</button>
+    <div class="error-banner" id="err2">⚠️ Make a selection first!</div>
+  </div>
+
+  <!-- SCREEN 3: HOMEWORK DETAILS -->
+  <div class="screen" id="screen3">
+    <div class="section-label">// SUBJECT LOG //</div>
+    <div class="screen-title">Log your homework</div>
+    <div class="screen-sub">"Have Homework" is on by default — switch it only if you truly have nothing for that class.</div>
+    <div id="subjectCards"></div>
+    <button class="btn btn-primary" onclick="validateAndGo3()">NEXT: QUIZZES →</button>
+    <button class="btn btn-secondary" onclick="showScreen(2)">← BACK</button>
+    <div class="error-banner" id="err3"></div>
+  </div>
+
+  <!-- SCREEN 4: QUIZZES & TESTS -->
+  <div class="screen" id="screen4">
+    <div class="section-label">// UPCOMING BATTLES //</div>
+    <div class="screen-title">Quizzes & Tests</div>
+    <div class="screen-sub">Check any subject with an upcoming quiz or test and set the date. No quizzes? Just hit Submit!</div>
+    <div id="quizCards"></div>
+    <button class="btn btn-submit" onclick="validateAndSubmit()">⬆ SUBMIT REPORT</button>
+    <button class="btn btn-secondary" onclick="showScreen(hasHomework ? 3 : 2)">← BACK</button>
+    <div class="error-banner" id="err4"></div>
+    <div class="loading" id="loadingMsg">Transmitting data...</div>
+  </div>
+
+  <!-- SCREEN 5: SUCCESS -->
+  <div class="screen" id="screen5">
+    <div class="success-wrap">
+      <div class="success-trophy">🏆</div>
+      <div class="success-title">MISSION COMPLETE!</div>
+      <div class="success-msg" id="successMsg">Nice work logging your homework.<br>Now go actually do it! 💪</div>
+      <div class="xp-badge">+50 XP EARNED</div>
+      <button class="btn btn-primary" onclick="resetForm()">NEW ENTRY →</button>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── CONFIG — replace with your Apps Script Web App URL ───────────────────
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbw5_8jToZA0vzmr61Hj87BURd9HPaHED2JKNOoLzIZaAsUK96zf932dejGNLekcnv9v/exec';
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let selectedKid = null;
+let hasHomework = null;
+
+const subjects = {
+  Finley: [
+    { id: 'math',    name: 'Math',           icon: '➕' },
+    { id: 'sci',     name: 'Science',         icon: '🔬' },
+    { id: 'ss',      name: 'Social Studies',  icon: '🌍' },
+    { id: 'la',      name: 'Language Arts',   icon: '📖' },
+    { id: 'foreign', name: 'Latin',           icon: '🏛️' },
+  ],
+  Luca: [
+    { id: 'math',    name: 'Math',           icon: '➕' },
+    { id: 'sci',     name: 'Science',         icon: '🔬' },
+    { id: 'ss',      name: 'Social Studies',  icon: '🌍' },
+    { id: 'la',      name: 'Language Arts',   icon: '📖' },
+    { id: 'foreign', name: 'Spanish',         icon: '🇪🇸' },
+  ]
+};
+
+// ── DATE ──────────────────────────────────────────────────────────────────
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const now = new Date();
+document.getElementById('todayDate').textContent =
+  DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+
+// ── PROGRESS ──────────────────────────────────────────────────────────────
+function setProgress(step) {
+  const total = hasHomework === false ? 3 : 4;
+  const pct = Math.round((step / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = step + ' / ' + total;
+}
+
+// ── SCREEN NAVIGATION ─────────────────────────────────────────────────────
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
+  // map screen number to progress step
+  const stepMap = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4 };
+  setProgress(stepMap[n] || 0);
+  window.scrollTo(0, 0);
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function clearError(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('visible');
+}
+
+// ── KID SELECT ────────────────────────────────────────────────────────────
+function selectKid(name) {
+  selectedKid = name;
+  document.querySelectorAll('.kid-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-' + name).classList.add('selected');
+  clearError('err1');
+}
+
+function validateAndGo1() {
+  if (!selectedKid) {
+    showError('err1', '⚠️ Pick your character first!');
+    return;
+  }
+  buildSubjectCards();
+  buildQuizCards();
+  showScreen(2);
+}
+
+// ── HOMEWORK YES/NO ───────────────────────────────────────────────────────
+function selectHW(val) {
+  hasHomework = val;
+  document.getElementById('btn-yes').classList.toggle('selected', val === true);
+  document.getElementById('btn-no').classList.toggle('selected', val === false);
+  clearError('err2');
+}
+
+function validateAndGo2() {
+  if (hasHomework === null) {
+    showError('err2', '⚠️ Make a selection first!');
+    return;
+  }
+  if (hasHomework) {
+    showScreen(3);
+  } else {
+    showScreen(4);
+  }
+}
+
+// ── BUILD SUBJECT CARDS ───────────────────────────────────────────────────
+function buildSubjectCards() {
+  const container = document.getElementById('subjectCards');
+  container.innerHTML = '';
+  subjects[selectedKid].forEach(function(sub) {
+    const card = document.createElement('div');
+    card.className = 'subject-card has-hw';
+    card.id = 'card-' + sub.id;
+    card.innerHTML =
+      '<div class="subject-header">' +
+        '<div class="subject-icon">' + sub.icon + '</div>' +
+        '<div class="subject-name">' + sub.name + '</div>' +
+      '</div>' +
+      '<div class="status-toggle">' +
+        '<button class="status-btn hw-btn active" onclick="setStatus(\'' + sub.id + '\', true)" id="hw-' + sub.id + '">📚 Have Homework</button>' +
+        '<button class="status-btn nohw-btn" onclick="setStatus(\'' + sub.id + '\', false)" id="nohw-' + sub.id + '">✅ No Homework</button>' +
+      '</div>' +
+      '<div class="hw-textarea-wrap visible" id="wrap-' + sub.id + '">' +
+        '<textarea class="hw-textarea" id="text-' + sub.id + '" placeholder="Describe the ' + sub.name.toLowerCase() + ' homework..." rows="3"></textarea>' +
+      '</div>';
+    container.appendChild(card);
+  });
+}
+
+function setStatus(subId, isHW) {
+  document.getElementById('hw-'   + subId).classList.toggle('active',  isHW);
+  document.getElementById('nohw-' + subId).classList.toggle('active', !isHW);
+  document.getElementById('wrap-' + subId).classList.toggle('visible',  isHW);
+  document.getElementById('card-' + subId).className = 'subject-card ' + (isHW ? 'has-hw' : 'no-hw');
+  // clear invalid state when user interacts
+  document.getElementById('card-' + subId).classList.remove('invalid');
+  const ta = document.getElementById('text-' + subId);
+  if (ta) ta.classList.remove('invalid');
+}
+
+// ── VALIDATE SCREEN 3 ─────────────────────────────────────────────────────
+function validateAndGo3() {
+  clearError('err3');
+  let missing = [];
+  subjects[selectedKid].forEach(function(sub) {
+    const hwBtn = document.getElementById('hw-' + sub.id);
+    const card  = document.getElementById('card-' + sub.id);
+    const ta    = document.getElementById('text-' + sub.id);
+    // clear previous invalid state
+    card.classList.remove('invalid');
+    ta && ta.classList.remove('invalid');
+
+    if (hwBtn && hwBtn.classList.contains('active')) {
+      const val = ta ? ta.value.trim() : '';
+      if (!val) {
+        missing.push(sub.name);
+        card.classList.add('invalid');
+        ta && ta.classList.add('invalid');
+      }
+    }
+  });
+
+  if (missing.length > 0) {
+    showError('err3', '⚠️ Fill in homework details for: ' + missing.join(', '));
+    return;
+  }
+  showScreen(4);
+}
+
+// ── BUILD QUIZ CARDS ──────────────────────────────────────────────────────
+function buildQuizCards() {
+  const container = document.getElementById('quizCards');
+  container.innerHTML = '';
+
+  const today    = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const minDate  = tomorrow.toISOString().split('T')[0];
+
+  subjects[selectedKid].forEach(function(sub) {
+    const card = document.createElement('div');
+    card.className = 'quiz-card';
+    card.id = 'qcard-' + sub.id;
+    card.innerHTML =
+      '<div class="quiz-row">' +
+        '<div class="quiz-checkbox" onclick="toggleQuiz(\'' + sub.id + '\')" id="qcheck-' + sub.id + '"></div>' +
+        '<div class="quiz-label"><span class="quiz-icon">' + sub.icon + '</span>' + sub.name + '</div>' +
+      '</div>' +
+      '<div class="quiz-date-wrap" id="qwrap-' + sub.id + '">' +
+        '<div class="quiz-date-label">When is the quiz/test?</div>' +
+        '<input type="date" class="quiz-date-input" id="qdate-' + sub.id + '" min="' + minDate + '">' +
+      '</div>';
+    container.appendChild(card);
+  });
+}
+
+function toggleQuiz(subId) {
+  const box  = document.getElementById('qcheck-' + subId);
+  const wrap = document.getElementById('qwrap-'  + subId);
+  const card = document.getElementById('qcard-'  + subId);
+  const isNowChecked = !box.classList.contains('checked');
+
+  box.classList.toggle('checked', isNowChecked);
+  box.textContent = isNowChecked ? '✓' : '';
+  wrap.classList.toggle('visible', isNowChecked);
+  card.classList.toggle('has-quiz', isNowChecked);
+  // clear invalid state on interaction
+  card.classList.remove('invalid');
+  const dateEl = document.getElementById('qdate-' + subId);
+  if (dateEl) dateEl.classList.remove('invalid');
+  clearError('err4');
+}
+
+// ── VALIDATE SCREEN 4 & SUBMIT ────────────────────────────────────────────
+function validateAndSubmit() {
+  clearError('err4');
+  let missing = [];
+
+  subjects[selectedKid].forEach(function(sub) {
+    const box    = document.getElementById('qcheck-' + sub.id);
+    const card   = document.getElementById('qcard-'  + sub.id);
+    const dateEl = document.getElementById('qdate-'  + sub.id);
+
+    card   && card.classList.remove('invalid');
+    dateEl && dateEl.classList.remove('invalid');
+
+    if (box && box.classList.contains('checked')) {
+      const val = dateEl ? dateEl.value : '';
+      if (!val) {
+        missing.push(sub.name);
+        card   && card.classList.add('invalid');
+        dateEl && dateEl.classList.add('invalid');
+      }
+    }
+  });
+
+  if (missing.length > 0) {
+    showError('err4', '⚠️ Set a date for: ' + missing.join(', '));
+    return;
+  }
+
+  doSubmit();
+}
+
+// ── COLLECT & SEND DATA ───────────────────────────────────────────────────
+function collectData() {
+  const data = {
+    timestamp:   new Date().toISOString(),
+    kid:         selectedKid,
+    hasHomework: hasHomework,
+    subjects:    {},
+    quizzes:     {}
+  };
+
+  if (hasHomework) {
+    subjects[selectedKid].forEach(function(sub) {
+      const hwBtn = document.getElementById('hw-' + sub.id);
+      const ta    = document.getElementById('text-' + sub.id);
+      data.subjects[sub.name] = {
+        status: (hwBtn && hwBtn.classList.contains('active')) ? 'Have Homework' : 'No Homework',
+        notes:  ta ? ta.value.trim() : ''
+      };
+    });
+  }
+
+  subjects[selectedKid].forEach(function(sub) {
+    const box    = document.getElementById('qcheck-' + sub.id);
+    const dateEl = document.getElementById('qdate-'  + sub.id);
+    if (box && box.classList.contains('checked') && dateEl && dateEl.value) {
+      data.quizzes[sub.name] = dateEl.value;
+    }
+  });
+
+  return data;
+}
+
+async function doSubmit() {
+  const submitBtn = document.getElementById('screen4').querySelector('.btn-submit');
+  const loading   = document.getElementById('loadingMsg');
+
+  submitBtn.style.opacity = '0.5';
+  submitBtn.style.pointerEvents = 'none';
+  loading.classList.add('visible');
+
+  const data = collectData();
+
+  try {
+    if (SHEET_URL && SHEET_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+      await fetch(SHEET_URL, {
+        method:  'POST',
+        mode:    'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(data)
+      });
+    }
+    loading.classList.remove('visible');
+    document.getElementById('successMsg').innerHTML =
+      'Great work, ' + data.kid + '! Homework logged for today.<br>Now go get it done! 💪';
+    showScreen(5);
+  } catch (err) {
+    loading.classList.remove('visible');
+    submitBtn.style.opacity = '';
+    submitBtn.style.pointerEvents = '';
+    showError('err4', '⚠️ Connection error — check your internet and try again.');
+  }
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────
+function resetForm() {
+  selectedKid = null;
+  hasHomework = null;
+  document.querySelectorAll('.kid-btn').forEach(function(b) { b.classList.remove('selected'); });
+  document.querySelectorAll('.yn-btn').forEach(function(b)  { b.classList.remove('selected'); });
+  document.getElementById('subjectCards').innerHTML = '';
+  document.getElementById('quizCards').innerHTML    = '';
+  ['err1','err2','err3','err4'].forEach(clearError);
+  showScreen(1);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+setProgress(0);
+</script>
+</body>
+</html>
